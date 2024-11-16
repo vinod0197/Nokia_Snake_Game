@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Xenzia Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #e0f7fa;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            background-color: #fff;
+        }
+
+        .score {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+
+        .start-btn, .level-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #0288d1;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+
+        .start-btn:hover, .level-btn:hover {
+            background-color: #0277bd;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+<div class="score">Score: <span id="score">0</span></div>
+<div>
+    <button class="level-btn" id="easy">Easy</button>
+    <button class="level-btn" id="medium">Medium</button>
+    <button class="level-btn" id="hard">Hard</button>
+</div>
+<button class="start-btn" id="startGame" disabled>Start Game</button>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const box = 20; // Size of the food
+    let snake = [{ x: box * 5, y: box * 5 }];
+    let direction = 'RIGHT';
+    let food = spawnFood();
+    let score = 0;
+    let game;
+    let speed = 100; // Initial speed
+
+    // Control the snake direction
+    document.addEventListener('keydown', changeDirection);
+
+    function changeDirection(event) {
+        if (event.keyCode === 37 && direction !== 'RIGHT') direction = 'LEFT';
+        else if (event.keyCode === 38 && direction !== 'DOWN') direction = 'UP';
+        else if (event.keyCode === 39 && direction !== 'LEFT') direction = 'RIGHT';
+        else if (event.keyCode === 40 && direction !== 'UP') direction = 'DOWN';
+    }
+
+    function spawnFood() {
+        return {
+            x: Math.floor(Math.random() * (canvas.width / box)) * box,
+            y: Math.floor(Math.random() * (canvas.height / box)) * box,
+        };
+    }
+
+    function draw() {
+        // Clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw the snake
+        for (let i = 0; i < snake.length; i++) {
+            ctx.fillStyle = (i === 0) ? 'green' : 'lightgreen';
+            ctx.beginPath();
+            ctx.arc(snake[i].x + box / 2, snake[i].y + box / 2, box / 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = 'darkgreen';
+            ctx.stroke();
+        }
+
+        // Draw the food
+        ctx.fillStyle = 'red';
+        ctx.beginPath();
+        ctx.arc(food.x + box / 2, food.y + box / 2, box / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Move the snake
+        let snakeX = snake[0].x;
+        let snakeY = snake[0].y;
+
+        if (direction === 'LEFT') snakeX -= box;
+        if (direction === 'UP') snakeY -= box;
+        if (direction === 'RIGHT') snakeX += box;
+        if (direction === 'DOWN') snakeY += box;
+
+        // Wrap the snake around the canvas
+        if (snakeX < 0) {
+            snakeX = canvas.width - box; // Wrap to right
+        } else if (snakeX >= canvas.width) {
+            snakeX = 0; // Wrap to left
+        }
+        if (snakeY < 0) {
+            snakeY = canvas.height - box; // Wrap to bottom
+        } else if (snakeY >= canvas.height) {
+            snakeY = 0; // Wrap to top
+        }
+
+        // Check if the snake eats the food
+        if (snakeX === food.x && snakeY === food.y) {
+            score++;
+            document.getElementById('score').innerText = score;
+            food = spawnFood(); // Spawn new food
+        } else {
+            snake.pop(); // Remove the last part of the snake
+        }
+
+        // Add new head
+        const newHead = { x: snakeX, y: snakeY };
+
+        // Game over conditions (only when the snake touches itself)
+        if (collision(newHead, snake)) {
+            clearInterval(game);
+            alert('Game Over! Your score: ' + score);
+            document.location.reload();
+        }
+
+        snake.unshift(newHead); // Add new head to the snake
+    }
+
+    function collision(head, array) {
+        for (let i = 1; i < array.length; i++) { // Start from 1 to avoid self-collision check
+            if (head.x === array[i].x && head.y === array[i].y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Start game function
+    document.getElementById('startGame').addEventListener('click', function() {
+        snake = [{ x: box * 5, y: box * 5 }];
+        direction = 'RIGHT';
+        food = spawnFood();
+        score = 0;
+        document.getElementById('score').innerText = score;
+        game = setInterval(draw, speed);
+    });
+
+    // Difficulty selection
+    document.querySelectorAll('.level-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            if (this.id === 'easy') {
+                speed = 150; // Easy speed
+            } else if (this.id === 'medium') {
+                speed = 100; // Medium speed
+            } else if (this.id === 'hard') {
+                speed = 50; // Hard speed
+            }
+            document.getElementById('startGame').disabled = false; // Enable start button
+            // Remove active class from other buttons
+            document.querySelectorAll('.level-btn').forEach(btn => {
+                btn.style.backgroundColor = '#0288d1';
+            });
+            this.style.backgroundColor = '#0277bd'; // Highlight selected level
+        });
+    });
+</script>
+
+</body>
+</html>
